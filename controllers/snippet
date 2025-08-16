@@ -1,0 +1,53 @@
+ # Parse reservation data
+            reservations_data = self.parse_hotel_reservation(soap_body)
+            if not reservations_data:
+                return invalid_response(
+                    "Parsing Error",
+                    "Could not parse hotel reservation data from XML.",
+                    400,
+                )
+
+            # Process each reservation
+            created_reservations = []
+            errors = []
+
+            for reservation_data in reservations_data:
+                _logger.info(f"Processing reservation: {reservation_data.get('reservation_id')}")
+
+                # Create the reservation with workflow
+                result = self.create_hotel_reservation_with_workflow(reservation_data)
+
+                if result.get('success'):
+                    created_reservations.append(result)
+                    _logger.info(f"Successfully created reservation: {result.get('reservation_no')}")
+                else:
+                    errors.append(result)
+                    _logger.error(f"Failed to create reservation: {result.get('error')}")
+
+            # Prepare response
+            response_data = {
+                'status': 'success' if created_reservations else 'error',
+                'message': f"Processed {len(reservations_data)} reservations",
+                'created_reservations': created_reservations,
+                'errors': errors,
+                'summary': {
+                    'total_processed': len(reservations_data),
+                    'successful': len(created_reservations),
+                    'failed': len(errors)
+                }
+            }
+
+            return werkzeug.wrappers.Response(
+                status=200,
+                content_type="application/json; charset=utf-8",
+                headers=[("Cache-Control", "no-store"), ("Pragma", "no-cache")],
+                response=json.dumps(response_data, indent=2),
+            )
+
+        except Exception as e:
+            _logger.error(f"Critical API error: {str(e)}")
+            return invalid_response(
+                "Internal Server Error",
+                f"An unexpected error occurred: {str(e)}",
+                500,
+            )
