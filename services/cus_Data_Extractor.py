@@ -1,3 +1,5 @@
+import re
+
 class CustomerDataExtractor:
     """Service for extracting customer information from reservation data"""
 
@@ -17,7 +19,8 @@ class CustomerDataExtractor:
 
         # Extract contact info
         telephone = customer.get('Telephone', {})
-        phone = telephone.get('@PhoneNumber', '') if isinstance(telephone, dict) else ''
+        phone_raw = telephone.get('@PhoneNumber', '') if isinstance(telephone, dict) else ''
+        phone = re.sub(r'\D', '', phone_raw)  # Keep only digits
 
         email = customer.get('Email', '')
         if isinstance(email, dict):
