@@ -1,9 +1,9 @@
 import logging
 
-_logger = logging.getLogger(__name__)
+
 
 class RoomStayExtractor:
-    """Service for extracting room stay information"""
+
 
     @staticmethod
     def extract_room_stay_info(hotel_reservation):
@@ -94,5 +94,4 @@ class RoomStayExtractor:
             }
 
         except Exception as e:
-            _logger.error(f"Failed to extract room stay info: {e}")
             return None

@@ -16,7 +16,7 @@ class ReservationService:
         self.reservation_number_generator = ReservationNumberGenerator()
 
     def create_reservation_lines(self, room_types, room_price_summary=None):
-        """Create reservation lines based on room types"""
+
         HotelRoomType = request.env['hotel.room.type']
         HotelRoom = request.env['hotel.room']
 
@@ -161,24 +161,24 @@ class ReservationService:
             new_reservation.sudo().invalidate_cache()
             updated_reservation = HotelReservation.sudo().browse(new_reservation.id)
 
-            # CRITICAL: Reservation must be confirmed to be considered successful
+
             try:
                 updated_reservation.sudo().confirmed_reservation()
-                # Verify the state changed to confirmed
+
                 updated_reservation.sudo().invalidate_cache()
                 final_reservation = HotelReservation.sudo().browse(new_reservation.id)
                 if final_reservation.state != 'confirm':
                     raise Exception(f"Reservation state is '{final_reservation.state}', expected 'confirm'")
             except Exception as e:
 
-                # Clean up - delete the draft reservation since it failed confirmation
+
                 try:
                     updated_reservation.sudo().cancel_reservation()
                     updated_reservation.sudo().set_to_draft_reservation()
                     updated_reservation.sudo().unlink()
 
                 except Exception as cleanup_error:
-                # Return error response
+
                     return {
                     'success': False,
                      'error': f'Reservation cleanup failed: {str(cleanup_error)}',
@@ -200,7 +200,7 @@ class ReservationService:
                 'children': total_children,
                 'email': customer_info['email'],
                 'phone': customer_info['phone'],
-                'state': 'confirm',  # Include confirmed state
+                'state': 'confirm',
                 'message': 'Reservation created and confirmed successfully'
             }
 

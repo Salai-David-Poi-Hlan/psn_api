@@ -1,7 +1,7 @@
 import logging
 import json
 import xmltodict
-_logger = logging.getLogger(__name__)
+
 
 class XmlParsingService:
     """Service for handling XML parsing operations"""
@@ -11,10 +11,10 @@ class XmlParsingService:
         """Convert XML to dictionary"""
         try:
             xml_dict = xmltodict.parse(xml_data)
-            _logger.info("Full XML converted to dict: %s", json.dumps(xml_dict, indent=2, default=str)[:2000])
+
             return xml_dict
         except Exception as e:
-            _logger.error("Failed to parse XML: %s", e)
+
             return {}
 
     @staticmethod
@@ -41,5 +41,5 @@ class XmlParsingService:
             return hotel_reservations[0]
 
         except Exception as e:
-            _logger.error(f"Error extracting reservation data: {e}")
+
             raise
