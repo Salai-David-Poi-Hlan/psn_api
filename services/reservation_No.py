@@ -2,11 +2,9 @@
 from odoo.http import request
 
 class ReservationNumberGenerator:
-    """Service for generating reservation numbers"""
 
     @staticmethod
     def generate_next_reservation_number():
-        """Generate the next reservation number in sequence"""
         HotelReservation = request.env['hotel.reservation']
 
         all_reservations = HotelReservation.sudo().search([
@@ -23,6 +21,5 @@ class ReservationNumberGenerator:
                         highest_number = number
             except:
                 continue
-
         next_number = highest_number + 1
         return f"R/{next_number:05d}"

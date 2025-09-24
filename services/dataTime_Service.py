@@ -1,14 +1,9 @@
 from datetime import  datetime
-import  logging
-
-_logger = logging.getLogger(__name__)
 
 class DateTimeHelper:
-    """Helper service for date/time operations"""
-
     @staticmethod
     def parse_and_format_datetime(date_string, default_time):
-        """Parse date string and convert to proper datetime format for Odoo"""
+
         try:
             if not date_string:
                 return None
@@ -31,5 +26,4 @@ class DateTimeHelper:
             return final_datetime
 
         except ValueError as e:
-            _logger.error(f"Error parsing date '{date_string}': {e}")
             return None
