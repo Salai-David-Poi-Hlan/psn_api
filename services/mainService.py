@@ -3,7 +3,7 @@ from .dataTime_Service import  DateTimeHelper
 from .reservation_No import  ReservationNumberGenerator
 from datetime import  datetime
 from odoo import  fields
-
+import logging
 
 
 
@@ -220,8 +220,11 @@ class ReservationService:
                     update_vals['email'] = customer_info['email']
                 if customer_info.get('phone'):
                     update_vals['ph_no'] = customer_info['phone']
-
-
+                if customer_info and customer_info.get('payment_status'):
+                    current_status = existing_reservation.payment
+                    new_status = customer_info['payment_status']
+                    if not ((current_status == 'paid' and new_status in ['partial_paid', 'not_paid']) or (current_status == 'partial_paid' and new_status == 'not_paid')):
+                        update_vals['payment'] = new_status
 
             if room_stay_info:
 
@@ -319,9 +322,10 @@ class ReservationService:
 
     def create_hotel_reservation(self, customer_info, room_stay_info):
 
-        try:
 
+        try:
             current_time = datetime.now().strftime("%H:%M:%S")
+
 
             checkin_datetime_obj = self.datetime_helper.parse_and_format_datetime(
                 room_stay_info['checkin_date'], current_time
@@ -329,16 +333,16 @@ class ReservationService:
             checkout_datetime_obj = self.datetime_helper.parse_and_format_datetime(
                 room_stay_info['checkout_date'], current_time
             )
-
-
             is_valid, total_guests, total_capacity = self.validate_room_capacity(room_stay_info)
+
+
             if not is_valid:
+
                 return {
                     'success': False,
                     'error': f'Insufficient room capacity: {total_guests} guests require {total_capacity} total capacity',
                     'error_type': 'capacity_error'
                 }
-
 
             try:
                 reservation_lines = self.create_reservation_lines(
@@ -346,12 +350,12 @@ class ReservationService:
                     customer_info.get("amount_after_tax")
                 )
             except ValueError as ve:
+
                 return {
                     'success': False,
                     'error': str(ve),
                     'error_type': 'validation_error'
                 }
-
 
             num_rooms = len(room_stay_info['room_types'])
             total_adults = room_stay_info['adults']
@@ -363,7 +367,6 @@ class ReservationService:
             else:
                 adults_for_creation = total_adults
                 children_for_creation = total_children
-
             room_price_summary = room_stay_info.get('room_price_summary', '0')
             siteminder_id = room_stay_info.get('siteminder_id', '')
 
@@ -378,6 +381,7 @@ class ReservationService:
                 'partner_invoice_id': 149,
                 'partner_order_id': 149,
                 'partner_shipping_id': 149,
+                'payment':customer_info['payment_status'],
                 'checkin': fields.Datetime.from_string(checkin_datetime_obj) if checkin_datetime_obj else None,
                 'checkout': fields.Datetime.from_string(checkout_datetime_obj) if checkout_datetime_obj else None,
                 'adults': adults_for_creation,
@@ -389,8 +393,6 @@ class ReservationService:
                 'room_price_summary': room_price_summary,
                 'siteminder_id': siteminder_id
             }
-
-
             reservation = request.env['hotel.reservation'].sudo().create(reservation_vals)
 
 
@@ -414,6 +416,7 @@ class ReservationService:
 
             reservation.sudo().write({'state': 'draft'})
 
+
             return {
                 'success': True,
                 'reservation_id': reservation.id,
@@ -423,11 +426,13 @@ class ReservationService:
             }
 
         except Exception as e:
+
             return {
                 'success': False,
                 'error': str(e),
                 'error_type': 'creation_error'
             }
+
 
 
 

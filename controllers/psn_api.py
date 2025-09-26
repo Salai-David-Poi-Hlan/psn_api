@@ -7,9 +7,6 @@ from odoo.addons.psn_api.services.room_stay_Extractor import RoomStayExtractor
 from odoo.addons.psn_api.services.mainService import ReservationService
 from odoo.addons.psn_api.services.responseBuilder import ResponseBuilder
 
-
-
-
 class PsnAPI(http.Controller):
 
 
@@ -23,7 +20,6 @@ class PsnAPI(http.Controller):
 
     @http.route(["/api/reservation"], methods=["POST"], type="http", auth="none", csrf=False)
     def handle_reservation(self, **post):
-
         try:
             soap_body = request.httprequest.data.decode("utf-8")
             api_key = self.auth_service.extract_api_key_from_soap(soap_body)
@@ -33,7 +29,6 @@ class PsnAPI(http.Controller):
                     "authentication_error",
                     soap_body
                 )
-
             access_token = self.auth_service.get_token(api_key)
             if not access_token:
                 return self.response_builder.build_error_response(
@@ -41,7 +36,6 @@ class PsnAPI(http.Controller):
                     "authentication_error",
                     soap_body
                 )
-
             parse_data = self.xml_service.parse_hotel_reservation_xml(soap_body)
             if not parse_data:
                 return self.response_builder.build_error_response(
@@ -49,7 +43,6 @@ class PsnAPI(http.Controller):
                     "validation_error",
                     soap_body
                 )
-
             try:
                 hotel_reservation = self.xml_service.extract_reservation_data(parse_data)
             except Exception as e:
@@ -58,7 +51,6 @@ class PsnAPI(http.Controller):
                     "validation_error",
                     parse_data
                 )
-
             customer_info = self.customer_extractor.extract_customer_info(hotel_reservation)
             if not customer_info.get('name'):
                 return self.response_builder.build_error_response(
@@ -66,7 +58,6 @@ class PsnAPI(http.Controller):
                     "validation_error",
                     parse_data
                 )
-
             room_stay_info = self.room_stay_extractor.extract_room_stay_info(hotel_reservation)
             if not room_stay_info:
                 return self.response_builder.build_error_response(
@@ -74,16 +65,14 @@ class PsnAPI(http.Controller):
                     "validation_error",
                     parse_data
                 )
-
             warnings = []
-
-
             if not customer_info.get('email'):
                 warnings.append({
                     'type': '10',
                     'code': '321',
                     'message': 'Guest email address is required'
                 })
+
             if not customer_info.get('phone'):
                 warnings.append({
                     'type': '10',
@@ -96,7 +85,6 @@ class PsnAPI(http.Controller):
                     'code': '323',
                     'message': 'Total amount information is missing'
                 })
-
             if room_stay_info.get('adults', 0) <= 1 and room_stay_info.get('children', 0) == 0:
                 warnings.append({
                     'type': '10',
@@ -106,8 +94,9 @@ class PsnAPI(http.Controller):
 
             room_stay_info['siteminder_id'] = customer_info.get('siteminder_id', '')
 
-
             siteminder_id = customer_info.get('siteminder_id')
+
+
             if siteminder_id:
                 existing_reservation = self.reservation_service.find_reservation_by_siteminder_id(siteminder_id)
                 if existing_reservation:
@@ -130,12 +119,13 @@ class PsnAPI(http.Controller):
                 )
 
             if reservation_result['success']:
-                reservation_result['action'] = action  # Add action to response
+                reservation_result['action'] = action
                 if warnings:
                     return self.response_builder.build_success_with_warnings_response(
                         reservation_result, parse_data, warnings
                     )
                 else:
+
                     return self.response_builder.build_success_response(reservation_result, parse_data)
             else:
                 error_type = reservation_result.get('error_type', 'unknown_error')
@@ -147,7 +137,7 @@ class PsnAPI(http.Controller):
                 )
 
         except Exception as e:
-            import traceback
+
             return self.response_builder.build_error_response(
                 f"An unexpected error occurred: {str(e)}",
                 "system_error",
