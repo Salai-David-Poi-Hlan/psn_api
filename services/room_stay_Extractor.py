@@ -1,7 +1,3 @@
-import logging
-
-
-
 class RoomStayExtractor:
 
 

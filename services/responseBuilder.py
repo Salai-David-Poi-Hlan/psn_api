@@ -127,7 +127,7 @@ class ResponseBuilder:
 
     @staticmethod
     def build_error_response(error_message, error_type="system_error", parse_data=None):
-        """Build OTA XML error response for hotel reservation"""
+
 
         echo_token = ResponseBuilder.extract_echo_token(parse_data) if parse_data else str(uuid.uuid4())
         current_timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')

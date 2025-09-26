@@ -21,14 +21,11 @@ class PsnAPI(http.Controller):
         self.reservation_service = ReservationService()
         self.response_builder = ResponseBuilder()
 
-    @http.route(["/api/test_connection"], methods=["POST"], type="http", auth="none", csrf=False)
-    def get_test_connection(self, **post):
-
-
+    @http.route(["/api/reservation"], methods=["POST"], type="http", auth="none", csrf=False)
+    def handle_reservation(self, **post):
 
         try:
             soap_body = request.httprequest.data.decode("utf-8")
-
             api_key = self.auth_service.extract_api_key_from_soap(soap_body)
             if not api_key:
                 return self.response_builder.build_error_response(
@@ -36,7 +33,6 @@ class PsnAPI(http.Controller):
                     "authentication_error",
                     soap_body
                 )
-
 
             access_token = self.auth_service.get_token(api_key)
             if not access_token:
@@ -46,9 +42,6 @@ class PsnAPI(http.Controller):
                     soap_body
                 )
 
-
-
-
             parse_data = self.xml_service.parse_hotel_reservation_xml(soap_body)
             if not parse_data:
                 return self.response_builder.build_error_response(
@@ -56,7 +49,6 @@ class PsnAPI(http.Controller):
                     "validation_error",
                     soap_body
                 )
-
 
             try:
                 hotel_reservation = self.xml_service.extract_reservation_data(parse_data)
@@ -66,7 +58,6 @@ class PsnAPI(http.Controller):
                     "validation_error",
                     parse_data
                 )
-
 
             customer_info = self.customer_extractor.extract_customer_info(hotel_reservation)
             if not customer_info.get('name'):
@@ -84,8 +75,8 @@ class PsnAPI(http.Controller):
                     parse_data
                 )
 
-
             warnings = []
+
 
             if not customer_info.get('email'):
                 warnings.append({
@@ -116,17 +107,31 @@ class PsnAPI(http.Controller):
             room_stay_info['siteminder_id'] = customer_info.get('siteminder_id', '')
 
 
-            reservation_result = self.reservation_service.create_hotel_reservation(
-                customer_info, room_stay_info
-            )
+            siteminder_id = customer_info.get('siteminder_id')
+            if siteminder_id:
+                existing_reservation = self.reservation_service.find_reservation_by_siteminder_id(siteminder_id)
+                if existing_reservation:
 
+                    reservation_result = self.reservation_service.update_hotel_reservation(
+                        siteminder_id, customer_info, room_stay_info
+                    )
+                    action = "updated"
+                else:
+
+                    reservation_result = self.reservation_service.create_hotel_reservation(
+                        customer_info, room_stay_info
+                    )
+                    action = "created"
+            else:
+                return self.response_builder.build_error_response(
+                    "Missing siteminder_id in reservation data",
+                    "validation_error",
+                    parse_data
+                )
 
             if reservation_result['success']:
-
-
-
+                reservation_result['action'] = action  # Add action to response
                 if warnings:
-
                     return self.response_builder.build_success_with_warnings_response(
                         reservation_result, parse_data, warnings
                     )
@@ -135,15 +140,11 @@ class PsnAPI(http.Controller):
             else:
                 error_type = reservation_result.get('error_type', 'unknown_error')
                 error_message = reservation_result.get('error', 'Unknown error occurred')
-
-
-
                 return self.response_builder.build_error_response(
                     error_message,
                     error_type,
                     parse_data
                 )
-
 
         except Exception as e:
             import traceback
@@ -151,5 +152,4 @@ class PsnAPI(http.Controller):
                 f"An unexpected error occurred: {str(e)}",
                 "system_error",
                 None
-
             )

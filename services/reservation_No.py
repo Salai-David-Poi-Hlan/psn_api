@@ -1,13 +1,12 @@
-
 from odoo.http import request
 
 class ReservationNumberGenerator:
 
     @staticmethod
     def generate_next_reservation_number():
-        HotelReservation = request.env['hotel.reservation']
+        hotelReservation = request.env['hotel.reservation']
 
-        all_reservations = HotelReservation.sudo().search([
+        all_reservations = hotelReservation.sudo().search([
             ('reservation_no', 'like', 'R/')
         ])
 
